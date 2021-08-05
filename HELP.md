@@ -175,9 +175,127 @@ java编译器将 .java 文件编译成扩展名为 .class 的文件。
 每个儿子都很懒，遇到类加载的活都给它爸爸干，直到爸爸说我也做不来的时候，儿子才会想办法自己去加载
 优势： 避免类的重复加载 、安全
 
+14、CountDownLatch：减计数、计数为0释放等待线程、不可重复到0为止了
+CyclicBarrier：加计数、计数达到指定值释放等待线程、可重复(计数达到指定值时会重置为0)
 
+15、ThreadLocal
+#### jdk8之前，是把当前线程当作key，存储在ThreadLocal里边
+#### jdk8之后，是在Thread里边声明了一个变量ThreadLocalMap(ThreadLocal的内部类)
+#### 好处：不会产生大的ThreadLocal
 
+Thread-->ThreadLocal-->ThreadLocalMap-->Entry(key:ThreadLocal,value:变量)
 
+|  jdk   |  Thread   | 线程变量  | ThreadLocal对象数 |
+|  ----  |  ----  | ----  | ----  |
+| jdk8之前  | 1000  | 2 | 每个ThreadLocal有1000个Thread对象引用 |
+| jdk8之后  | 1000  | 2 | 每个Thread有两个ThreadLocal引用 |
+
+16、AtomicReference
+compareAndSet方法，它可以将引用与预期值（引用）进行比较，如果它们相等，则在AtomicReference对象内设置一个新的引用
+AtomicReference 主要是依赖于 sun.misc.Unsafe 提供的一些 native 方法保证操作的原子性。
+
+17、雪花算法(按时间顺序升序排列的；且可以保证在分布式高并发环境下生成的ID不会发生重复)，64位（2的64次方，长度18~19）
+符号位：最高位是符号位，为保证生成的ID是正数，故不使用，其值恒为0
+时间戳：41位长度的时间戳，69年不重复
+数据中心ID：5位
+机器ID：5位
+序列号：12位的计数序列号，支持每个节点每毫秒产生4096个ID序号
+
+18、服务器变慢
+#### 整机情况 : top 
+    看cpu /memory 
+    看load average: 1.6 ,0.9 ,0.4  1分钟、5分钟、15分钟系统的平均负载值
+
+##### 查看cpu: vmstat -n 2 3    每两秒采样一次，采样三次
+ vmstat -n 2 3
+procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 1  0      0 778108      0 4461684    0    0     0    11    0    0  1  0 99  0  0
+ 0  0      0 778076      0 4461720    0    0     0     0 1042 1124  0  0 99  0  0
+ 0  0      0 778012      0 4461784    0    0     0  2010 1150 1228  0  0 99  0  0
+procs 
+    r:运行等待cpu进程数
+    b:等待资源进程数，比如磁盘IO、网络IO
+cpu
+    us:用户进程消耗cpu时间百分比，长期大于50%优化程序
+    sy:内核进程消耗cpu时间百分比
+    us + sy:大于80%，说明可能cpu不足
+    id:处于空闲cpu时间百分比
+    wa:系统等待cpu时间百分比
+    st:虚拟机等待cpu时间百分比
+
+pidstat 进程编号： 每个进程cpu用量分解信息
+pidstat -p 59223 -r 5  5秒采样一次cpu信息
+Linux 3.10.0-693.el7.x86_64 (test-node03-com) 	08/05/2021 	_x86_64_	(4 CPU)
+04:34:42 PM   UID       PID    %usr %system  %guest    %CPU   CPU  Command
+04:34:42 PM     0     59223    0.00    0.00    0.00    0.00     2  java
+
+##### 查看内存: free -m 
+##### 查看磁盘: df -h 
+##### 查看磁盘IO:
+iostat -xdk 2 3  每两秒采样一次，采样三次
+Linux 3.10.0-693.el7.x86_64 (test-node03-com) 	08/05/2021 	_x86_64_	(4 CPU)
+Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+sda               0.00     0.22    0.00    2.71     0.07    45.07    33.29     0.01    2.00   11.88    1.99  11.02   2.99
+scd0              0.00     0.00    0.00    0.00     0.00     0.00   114.22     0.00    0.28    0.28    0.00   0.28   0.00
+dm-0              0.00     0.00    0.00    2.93     0.07    45.07    30.83     0.03    9.07   12.03    9.07  10.21   2.99
+dm-1              0.00     0.00    0.00    0.00     0.00     0.00    15.34     0.00   31.01    0.74   73.52  12.11   0.00
+
+rkB/s：每秒读取数据量
+wkB/s：每秒写入数据量
+await：请求等待时间
+util：一秒钟有百分之几的时间用于IO操作，100%代表磁盘带宽跑满
+
+pidstat -d 3 -p 59223
+Linux 3.10.0-693.el7.x86_64 (test-node03-com) 	08/05/2021 	_x86_64_	(4 CPU)
+04:56:56 PM   UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s  Command
+04:56:59 PM     0     59223      0.00      0.00      0.00  java
+04:57:02 PM     0     59223      0.00     16.00      0.00  java
+##### 查看网络IO: ifstat 1  每秒刷新一次
+
+### 定位到具体代码
+ps -mp 4519 -o THREAD,tid,time
+USER     %CPU PRI SCNT WCHAN  USER SYSTEM   TID     TIME
+root     90.3   -    - -         -      -     - 00:01:21
+root      0.0  19    - futex_    -      -  4519 00:00:00
+root     89.8  19    - -         -      -  4520 00:01:20
+
+-m：显示所有线程
+-p：该线程使用cpu的时间
+-o：用户自定义的格式
+将10进制的线程id转化成16进制的id 
+
+#### jstack 进程id | grep tid(16进制线程ID小写英文) -A60
+     jstack 4520   | grep 11a8 -A60
+
+jstack 5884 | grep 16fd -A60
+"main" #1 prio=5 os_prio=0 tid=0x00007f7450008800 nid=0x16fd runnable [0x00007f7457b79000]
+   java.lang.Thread.State: RUNNABLE
+	at java.io.FileOutputStream.writeBytes(Native Method)
+	at java.io.FileOutputStream.write(FileOutputStream.java:326)
+	at java.io.BufferedOutputStream.flushBuffer(BufferedOutputStream.java:82)
+	at java.io.BufferedOutputStream.flush(BufferedOutputStream.java:140)
+	- locked <0x00000006c560cad0> (a java.io.BufferedOutputStream)
+	at java.io.PrintStream.write(PrintStream.java:482)
+	- locked <0x00000006c560c000> (a java.io.PrintStream)
+	at sun.nio.cs.StreamEncoder.writeBytes(StreamEncoder.java:221)
+	at sun.nio.cs.StreamEncoder.implFlushBuffer(StreamEncoder.java:291)
+	at sun.nio.cs.StreamEncoder.flushBuffer(StreamEncoder.java:104)
+	- locked <0x00000006c560cbf0> (a java.io.OutputStreamWriter)
+	at java.io.OutputStreamWriter.flushBuffer(OutputStreamWriter.java:185)
+	at java.io.PrintStream.newLine(PrintStream.java:546)
+	- eliminated <0x00000006c560c000> (a java.io.PrintStream)
+	at java.io.PrintStream.println(PrintStream.java:751)
+	- locked <0x00000006c560c000> (a java.io.PrintStream)
+	at DemoTest.main(DemoTest.java:7)
+
+"VM Thread" os_prio=0 tid=0x00007f7450076800 nid=0x1702 runnable 
+
+"GC task thread#0 (ParallelGC)" os_prio=0 tid=0x00007f745001d800 nid=0x16fe runnable 
+
+"GC task thread#1 (ParallelGC)" os_prio=0 tid=0x00007f745001f800 nid=0x16ff runnable 
+
+"GC task thread#2 (ParallelGC)" os_prio=0 tid=0x00007f7450021800 nid=0x1700 runnable
 
 
 
