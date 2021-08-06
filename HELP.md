@@ -31,9 +31,7 @@ Integer这个类， equals的实现如下：
 当==两边是引用类型时比较的是两个内存地址，
 也可以看成是看这两个引用是否指向堆内存里的同一块地址
 
-6、自动装箱/拆箱
-
-7、ArrayList 
+6、ArrayList 
 默认数组大小10
 第一个元素，在堆内存中占了10个位置，好浪费呀，没办法，你要享受ArrayList的便利与丰富的API，就得牺牲一下空间作为代价。
 数组的扩容，一般是oldCapacity + (oldCapacity >> 1)，相当于扩容1.5倍。
@@ -57,6 +55,15 @@ Integer这个类， equals的实现如下：
 当我们ArrayLIst里有大量数据时，这时候去频繁插入/删除元素会触发底层数组频繁拷贝，效率不高，
 还会造成内存空间的浪费，这个问题在另一个类：LinkedList里有解决方案
 查找元素效率不高，在HashMap里有解决方案
+
+7、LinkedList
+LinkedList是基于双向链表来实现的
+三个成员变量，size、first、last
+很简单，没有了底层数组，新增加了一个Node对象，
+每个Node对象都持有next引用(下一个)和prev引用(上一个)，其实就是之前的双向链表
+删除调用unlink()方法
+ArrayList删除元素后，底层数组要往前复制一格，ArrayList底层数组删除元素时间复杂度为Ｏ(n)。
+再来看LinkedList，LinkedList底层链表删除元素只是简单的修改了一下引用地址，时间复杂度为O(1)
 
 8、vector
 Vector是线程安全的，ArrayList不是线程安全的。
@@ -290,11 +297,8 @@ jstack 5884 | grep 16fd -A60
 	at DemoTest.main(DemoTest.java:7)
 
 "VM Thread" os_prio=0 tid=0x00007f7450076800 nid=0x1702 runnable 
-
 "GC task thread#0 (ParallelGC)" os_prio=0 tid=0x00007f745001d800 nid=0x16fe runnable 
-
 "GC task thread#1 (ParallelGC)" os_prio=0 tid=0x00007f745001f800 nid=0x16ff runnable 
-
 "GC task thread#2 (ParallelGC)" os_prio=0 tid=0x00007f7450021800 nid=0x1700 runnable
 
 
