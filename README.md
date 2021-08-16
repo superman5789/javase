@@ -123,6 +123,8 @@ HashMap的最底层是数组来实现的，数组里的元素可能为null，也
 如果负载因子达到了1的情况，也就是Entry数组存满了才发生扩容，这样会出现大量的哈希冲突的情况，出现链表过长，因此造成get查询数据的效率。
 因此选择了0.5~1的折中数也就是0.75，均衡解决了上面出现的情况。
 
+HashMap和双向链表合二为一即是LinkedHashMap
+
 11、HashSet
 boolean putFlag = map.put(e,PRESENT);
 return putFlag;
@@ -169,6 +171,11 @@ Selector会不断的去遍历所有的Socket，一旦有一个Socket建立完成
 java编译器将 .java 文件编译成扩展名为 .class 的文件。
 .class 文件中保存着java转换后，虚拟机将要执行的指令。
 当需要某个类的时候，java虚拟机会加载 .class 文件，并创建对应的class对象，将class文件加载到虚拟机的内存，这个过程被称为类的加载。
+
+类加载器：
+启动加载器(负责将JAVA_HOME/lib下面的核心类库加载到内存中)
+扩展类加载器（负责将JAVA_HOME/lib/ext下面的核心类库加载到内存中）
+系统类加载器(负责将用户类路径(java -classpath第三方类库的路径加载到内存中)
 
 加载：ClassLoader通过一个类的完全限定名查找此类字节码文件，并利用字节码文件创建一个class对象。
 验证：确保class文件不会危害虚拟机自身的安全，包括四种验证：文件格式的验证，元数据的验证，字节码验证，符号引用验证。
